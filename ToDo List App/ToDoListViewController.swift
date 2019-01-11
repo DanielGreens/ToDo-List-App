@@ -10,7 +10,7 @@ import UIKit
 
 class ToDoListViewController: UITableViewController {
 
-    let itemArray = ["Find Mike", "Buy Eggs", "Destroy Demogorgon"]
+    var itemArray = ["Сделать приложение", "Купить молоко", "Убрать комнату"]
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -18,6 +18,32 @@ class ToDoListViewController: UITableViewController {
         
         // Do any additional setup after loading the view, typically from a nib.
     }
+    
+    // MARK: - Button Action
+    
+    @IBAction func addButtonPressed(_ sender: UIBarButtonItem) {
+        
+        var textField = UITextField()   //Создаем текстовое поле, чтобы мы могли отслеживать набранный пользователем текст
+        
+        let alert = UIAlertController(title: "Новая задача", message: nil, preferredStyle: .alert)
+        
+        let addAction = UIAlertAction(title: "Добавить задачу", style: .default) { (action) in
+            //Что должно произойти если пользователь нажмет добавить задачу
+            self.itemArray.append(textField.text!)
+            
+            self.tableView.reloadData()
+        }
+        
+        alert.addTextField { (alertTextField) in
+            alertTextField.placeholder = "Создайте новую задачу"
+            textField = alertTextField
+        }
+        
+        alert.addAction(addAction)
+        
+        present(alert, animated: true, completion: nil)
+    }
+    
 
     // MARK: - Tableview Datasourse Methods
     
