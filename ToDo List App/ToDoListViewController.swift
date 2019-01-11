@@ -12,11 +12,15 @@ class ToDoListViewController: UITableViewController {
 
     var itemArray = ["Сделать приложение", "Купить молоко", "Убрать комнату"]
     
+    let defaults = UserDefaults.standard
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         
+        if let items = defaults.array(forKey: "TodoListArray") as? [String] {
+            itemArray = items
+        }
         
-        // Do any additional setup after loading the view, typically from a nib.
     }
     
     // MARK: - Button Action
@@ -30,6 +34,8 @@ class ToDoListViewController: UITableViewController {
         let addAction = UIAlertAction(title: "Добавить задачу", style: .default) { (action) in
             //Что должно произойти если пользователь нажмет добавить задачу
             self.itemArray.append(textField.text!)
+            
+            self.defaults.set(self.itemArray, forKey: "TodoListArray")
             
             self.tableView.reloadData()
         }
