@@ -10,14 +10,26 @@ import UIKit
 
 class ToDoListViewController: UITableViewController {
 
-    var itemArray = ["Сделать приложение", "Купить молоко", "Убрать комнату"]
+    var itemArray = [Item]()
     
     let defaults = UserDefaults.standard
     
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        if let items = defaults.array(forKey: "TodoListArray") as? [String] {
+        let newItem = Item()
+        newItem.title = "Сделать приложение"
+        itemArray.append(newItem)
+
+        let newItem2 = Item()
+        newItem2.title = "Купить молоко"
+        itemArray.append(newItem2)
+
+        let newItem3 = Item()
+        newItem3.title = "Убрать комнату"
+        itemArray.append(newItem3)
+        
+        if let items = defaults.array(forKey: "TodoListArray") as? [Item] {
             itemArray = items
         }
         
@@ -33,7 +45,10 @@ class ToDoListViewController: UITableViewController {
         
         let addAction = UIAlertAction(title: "Добавить задачу", style: .default) { (action) in
             //Что должно произойти если пользователь нажмет добавить задачу
-            self.itemArray.append(textField.text!)
+            
+            let newItem = Item()
+            newItem.title = textField.text!
+            self.itemArray.append(newItem)
             
             self.defaults.set(self.itemArray, forKey: "TodoListArray")
             
@@ -42,6 +57,7 @@ class ToDoListViewController: UITableViewController {
         
         alert.addTextField { (alertTextField) in
             alertTextField.placeholder = "Создайте новую задачу"
+            alertTextField.autocapitalizationType = .sentences  //Начинаем писать с заглавной буквы
             textField = alertTextField
         }
         
@@ -65,7 +81,8 @@ class ToDoListViewController: UITableViewController {
         
         let cell = tableView.dequeueReusableCell(withIdentifier: "ToDoItemCell", for: indexPath) as UITableViewCell
         
-        cell.textLabel?.text = itemArray[indexPath.row]
+        cell.textLabel?.text = itemArray[indexPath.row].title
+        cell.accessoryType = itemArray[indexPath.row].done ? .checkmark : .none
         
         return cell
     }
@@ -74,7 +91,13 @@ class ToDoListViewController: UITableViewController {
     
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         
-        tableView.cellForRow(at: indexPath)?.accessoryType = tableView.cellForRow(at: indexPath)?.accessoryType == .checkmark ? .none : .checkmark
+        //Этот способ работает корректно только при маленьком количестве строк в таблице, если их будет больше чем может поместиться на экран, то выбрав первую ячейку, прокручивая ниже мы увидим что у ячейки которую мы не выбирали тоже появится .checkmark, все из за того что ячейки переиспользуются, а .checkmark у каждой ячейки не зависим, и если он был выбран то при переиспользовании этой ячейки он останется выбранным
+        //tableView.cellForRow(at: indexPath)?.accessoryType = tableView.cellForRow(at: indexPath)?.accessoryType == .checkmark ? .none : .checkmark
+        
+        //Чтобы этого избежать мы создали модель данных Item, в которой мы храним свойство говорящее была ли выбрана эта ячейка или нет. И присваиваем значение .accessoryType в методе выше, который вызывается при инициализации ячеек
+        itemArray[indexPath.row].done = !itemArray[indexPath.row].done
+        
+        tableView.reloadData()
         
         tableView.deselectRow(at: indexPath, animated: true)    //Погашаем выделение ячейки
     }
