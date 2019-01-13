@@ -9,7 +9,8 @@
 import Foundation
 
 ///Класс модели задачи
-class Item {
+//Encodable - Это означает что наш класс теперь может зашифровать себя в plist или в Json. Чтобы этот протокол выполнялся, все типы свойств класса должны быть реализованны стандартными типами. Аналогично с Decodable
+class Item : Encodable, Decodable {
     
     var title : String
     var done : Bool
@@ -18,5 +19,4 @@ class Item {
         title = ""
         done = false
     }
-    
 }

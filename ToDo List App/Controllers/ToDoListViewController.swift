@@ -10,29 +10,18 @@ import UIKit
 
 class ToDoListViewController: UITableViewController {
 
+    //Так как мы храним список объектов типа который мы сами создали для хранения данных нам не подходит стандартный User.defaults. Мы создали свой Items.plist
     var itemArray = [Item]()
-    
-    let defaults = UserDefaults.standard
+    let dataFilePath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent("Items.plist")
+
     
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        let newItem = Item()
-        newItem.title = "Сделать приложение"
-        itemArray.append(newItem)
-
-        let newItem2 = Item()
-        newItem2.title = "Купить молоко"
-        itemArray.append(newItem2)
-
-        let newItem3 = Item()
-        newItem3.title = "Убрать комнату"
-        itemArray.append(newItem3)
+        //Получаем путь к папке на данном ПК, где хранятся наши данные для Items.plist
+//        print(dataFilePath!)
         
-        if let items = defaults.array(forKey: "TodoListArray") as? [Item] {
-            itemArray = items
-        }
-        
+        loadItems()
     }
     
     // MARK: - Button Action
@@ -50,9 +39,7 @@ class ToDoListViewController: UITableViewController {
             newItem.title = textField.text!
             self.itemArray.append(newItem)
             
-            self.defaults.set(self.itemArray, forKey: "TodoListArray")
-            
-            self.tableView.reloadData()
+            self.saveItems()
         }
         
         alert.addTextField { (alertTextField) in
@@ -97,9 +84,41 @@ class ToDoListViewController: UITableViewController {
         //Чтобы этого избежать мы создали модель данных Item, в которой мы храним свойство говорящее была ли выбрана эта ячейка или нет. И присваиваем значение .accessoryType в методе выше, который вызывается при инициализации ячеек
         itemArray[indexPath.row].done = !itemArray[indexPath.row].done
         
+        saveItems()
+        
         tableView.reloadData()
         
         tableView.deselectRow(at: indexPath, animated: true)    //Погашаем выделение ячейки
+    }
+    
+    // MARK: - Манипуляции с данными
+    
+    ///Сохраняет данные в Items.plist
+    private func saveItems(){
+        let encoder = PropertyListEncoder()
+        
+        do{
+            let data = try encoder.encode(itemArray)
+            try data.write(to: dataFilePath!)
+        }
+        catch{
+            print("Ошибка в сохранении данных - \(error.localizedDescription)")
+        }
+        
+        self.tableView.reloadData()
+    }
+    
+    ///Загружает данные из Items.plist
+    private func loadItems() {
+        if let data = try? Data(contentsOf: dataFilePath!) {
+            let decoder = PropertyListDecoder()
+            do{
+                itemArray = try decoder.decode([Item].self, from: data) //[Item].self - Указываем что это именно тип Item, а не экземпляр класса. Например Someclass.self возвращает сам Someclass, а не экземпляр Someclass
+            }
+            catch {
+                print("Ошибка в загрузке данных - \(error.localizedDescription)")
+            }
+        }
     }
     
 }
