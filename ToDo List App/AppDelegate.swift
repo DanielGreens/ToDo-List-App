@@ -7,6 +7,7 @@
 //
 
 import UIKit
+import CoreData
 
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate {
@@ -45,6 +46,33 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     ///Когда пользователь например свернул наше приложение и запустил какое нибудь ресурсоемкое приложение и операционная система вынуждена завершить наше приложение
     func applicationWillTerminate(_ application: UIApplication) {
         // Called when the application is about to terminate. Save data if appropriate. See also applicationDidEnterBackground:.
+        self.saveContex()
+    }
+    
+    // MARK: - CoreData Stack
+    
+    public lazy var persistentContainer: NSPersistentContainer = {
+        
+        let container = NSPersistentContainer(name: "DataModel")
+        container.loadPersistentStores(completionHandler: { (storeDescription, error) in
+            if let error = error as NSError? {
+                fatalError("Ошибка - \(error), \(error.userInfo)")
+            }
+        })
+        return container
+    }()
+    
+    private func saveContex() {
+        let context = persistentContainer.viewContext
+        if context.hasChanges {
+            do{
+                try context.save()
+            }
+            catch{
+                let nserror = error as NSError
+                fatalError("Ошибка сохранения - \(nserror.userInfo)")
+            }
+        }
     }
 
 

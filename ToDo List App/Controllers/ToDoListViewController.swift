@@ -7,21 +7,42 @@
 //
 
 import UIKit
+import CoreData
 
-class ToDoListViewController: UITableViewController {
+class ToDoListViewController: UITableViewController, UISearchBarDelegate {
 
     //Так как мы храним список объектов типа который мы сами создали для хранения данных нам не подходит стандартный User.defaults. Мы создали свой Items.plist
     var itemArray = [Item]()
-    let dataFilePath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent("Items.plist")
+    
+    var selectedCategory : Category? {
+        didSet{
+            //Вызываем загрузку только когда мы уже знаем выбранную категорию, чтобы наше приложение не упало
+            loadItems()
+        }
+    }
+    
+    let dataFilePath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
+    let context = (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
+    
+    let searchController = UISearchController(searchResultsController: nil)
 
     
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        //Получаем путь к папке на данном ПК, где хранятся наши данные для Items.plist
-//        print(dataFilePath!)
+        //Получаем путь к папке на данном ПК, где хранятся наши данные для DataModel
+        //        print(dataFilePath)
         
-        loadItems()
+        //Помещаем контроллер поиска в NavigationBar
+        navigationItem.searchController = searchController
+        //Если true, то мы гарантируем что панель поиска не останется на экране, если пользователь перейдет к другому контроллеру представления
+        definesPresentationContext = true
+        
+    }
+    
+    override func viewDidAppear(_ animated: Bool) {
+        //Чтобы изменения внешнего вида строки поиска вступили в силу, метод нужно вызвать здесь
+        configurateSearcBar()
     }
     
     // MARK: - Button Action
@@ -35,8 +56,9 @@ class ToDoListViewController: UITableViewController {
         let addAction = UIAlertAction(title: "Добавить задачу", style: .default) { (action) in
             //Что должно произойти если пользователь нажмет добавить задачу
             
-            let newItem = Item()
+            let newItem = Item(context: self.context)
             newItem.title = textField.text!
+            newItem.parentCategory = self.selectedCategory
             self.itemArray.append(newItem)
             
             self.saveItems()
@@ -84,6 +106,10 @@ class ToDoListViewController: UITableViewController {
         //Чтобы этого избежать мы создали модель данных Item, в которой мы храним свойство говорящее была ли выбрана эта ячейка или нет. И присваиваем значение .accessoryType в методе выше, который вызывается при инициализации ячеек
         itemArray[indexPath.row].done = !itemArray[indexPath.row].done
         
+        //Удаление из CoreData
+        //context.delete(itemArray[indexPath.row])
+        //itemArray.remove(at: indexPath.row)
+        
         saveItems()
         
         tableView.reloadData()
@@ -93,13 +119,11 @@ class ToDoListViewController: UITableViewController {
     
     // MARK: - Манипуляции с данными
     
-    ///Сохраняет данные в Items.plist
+    ///Сохраняет данные в DataModel (CoreData)
     private func saveItems(){
-        let encoder = PropertyListEncoder()
         
         do{
-            let data = try encoder.encode(itemArray)
-            try data.write(to: dataFilePath!)
+            try context.save()
         }
         catch{
             print("Ошибка в сохранении данных - \(error.localizedDescription)")
@@ -108,18 +132,99 @@ class ToDoListViewController: UITableViewController {
         self.tableView.reloadData()
     }
     
-    ///Загружает данные из Items.plist
-    private func loadItems() {
-        if let data = try? Data(contentsOf: dataFilePath!) {
-            let decoder = PropertyListDecoder()
-            do{
-                itemArray = try decoder.decode([Item].self, from: data) //[Item].self - Указываем что это именно тип Item, а не экземпляр класса. Например Someclass.self возвращает сам Someclass, а не экземпляр Someclass
-            }
-            catch {
-                print("Ошибка в загрузке данных - \(error.localizedDescription)")
-            }
+    ///Загружает данные из DataModel (CoreData)
+    /// - Parameters:
+    ///     - with: Запрос по которому будут возвращены данные. По умолчанию возвращает все записи
+    ///     - predicate: Предикат, по которому производится поиск
+    private func loadItems(with request: NSFetchRequest<Item> = Item.fetchRequest(), predicate: NSPredicate? = nil) {
+        
+        //Предикат поиска задач для выбранной категории
+        let categoryPredicate = NSPredicate(format: "parentCategory.name MATCHES %@", selectedCategory!.name!)
+        
+        //В данном случае у нас массив предикатов, так как мы должны искать только по тем элементам, который относяться к выбранной категории и не пересекаться с другими
+        if let additionalPredicate = predicate {
+            //Проверяем, если передали дополнительный предикат (поиск), то компонуем их, иначе будем получать просто все задачи для заданной категории
+            request.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [categoryPredicate, additionalPredicate])
         }
+        else{
+            request.predicate = categoryPredicate
+        }
+        
+        do{
+            itemArray = try context.fetch(request)
+        }
+        catch{
+            print("Ошибка в загрузке данных - \(error.localizedDescription)")
+        }
+        
+        self.tableView.reloadData()
     }
     
 }
 
+
+// MARK: - Методы поиска
+extension ToDoListViewController: UISearchResultsUpdating {
+    
+    ///Настраиваем внешний вид SearchBar
+    private func configurateSearcBar() {
+        searchController.searchResultsUpdater = self
+        //Если поставить true, то мы не сможем взаимодействовать с таблицей, пока вводим строку поиска
+        searchController.obscuresBackgroundDuringPresentation = false
+        searchController.searchBar.tintColor = #colorLiteral(red: 1.0, green: 1.0, blue: 1.0, alpha: 1.0)
+        searchController.searchBar.barTintColor = .white
+        
+        //Настраиваем текстовое поле SearchBar
+        if let textField = searchController.searchBar.value(forKey: "searchField") as? UITextField {
+            //Меняем цвет placeHolder на белый
+            textField.attributedPlaceholder = NSAttributedString(string: "Поиск...", attributes: [NSAttributedString.Key.foregroundColor : UIColor.white])
+            textField.textColor = #colorLiteral(red: 1.0, green: 1.0, blue: 1.0, alpha: 1.0)
+            
+            //Меняем цвет иконки лупы на белый
+            let iconView = textField.leftView as! UIImageView
+            iconView.image = iconView.image?.withRenderingMode(.alwaysTemplate)
+            iconView.tintColor = .white
+            
+            //Меняем цвет кнопки очистки содержимого строки поиска на белый
+            let clearButton = textField.value(forKey: "clearButton") as? UIButton
+            clearButton?.setImage(clearButton?.currentImage?.withRenderingMode(.alwaysTemplate), for: .normal)
+            clearButton?.tintColor = .white
+        }
+    }
+    
+    //Сюда мы попадаем каждый раз когда пользователь печатает новый символ
+    func updateSearchResults(for searchController: UISearchController) {
+        filterContentForSearchText(searchController.searchBar.text!)
+    }
+    
+    /// Проверяет строку поиска на пустую строку
+    /// - Returns:
+    ///     true - если строка пустая
+    private func searchBarIsEmpty() -> Bool {
+        return searchController.searchBar.text?.isEmpty ?? true
+    }
+    
+    
+    
+    ///Фильтрует контент в соответствии с строкой поиска
+    ///
+    /// - Parameters:
+    ///     - searchText: Строка поиска
+    private func filterContentForSearchText(_ searchText: String) {
+        
+        //Если строка поиска не пустая загружаем совпадения
+        if !searchBarIsEmpty(){
+            let request : NSFetchRequest<Item> = Item.fetchRequest()
+            
+            //Сортируем полученный результат по полю title по возрастанию
+            request.sortDescriptors = [NSSortDescriptor(key: "title", ascending: true)]
+            
+            //[cd] -> с - означает что мы не обращаем внимание на регистр. d - означает что мы игнорируем специальные символы и приравниваем их к обычным Подробнее в NSPredicateCheatsheet.pdf
+            loadItems(with: request, predicate: NSPredicate(format: "title CONTAINS[cd] %@", searchText))
+        }
+        //Иначе загружаем весь список
+        else{
+            loadItems()
+        }
+    }
+}
