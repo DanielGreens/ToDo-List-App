@@ -7,12 +7,15 @@
 //
 
 import UIKit
-import CoreData
+import RealmSwift
 
 class ToDoListViewController: UITableViewController, UISearchBarDelegate {
 
-    //Так как мы храним список объектов типа который мы сами создали для хранения данных нам не подходит стандартный User.defaults. Мы создали свой Items.plist
-    var itemArray = [Item]()
+    ///Объект для записи и чтения данных из БД
+    let realm = try! Realm()
+    
+    //Теперь мы делаем тип Results, так как этот тип возвращается Realm
+    var itemArray: Results<Item>?
     
     var selectedCategory : Category? {
         didSet{
@@ -21,17 +24,11 @@ class ToDoListViewController: UITableViewController, UISearchBarDelegate {
         }
     }
     
-    let dataFilePath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
-    let context = (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
-    
     let searchController = UISearchController(searchResultsController: nil)
 
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        
-        //Получаем путь к папке на данном ПК, где хранятся наши данные для DataModel
-        //        print(dataFilePath)
         
         //Помещаем контроллер поиска в NavigationBar
         navigationItem.searchController = searchController
@@ -56,12 +53,21 @@ class ToDoListViewController: UITableViewController, UISearchBarDelegate {
         let addAction = UIAlertAction(title: "Добавить задачу", style: .default) { (action) in
             //Что должно произойти если пользователь нажмет добавить задачу
             
-            let newItem = Item(context: self.context)
-            newItem.title = textField.text!
-            newItem.parentCategory = self.selectedCategory
-            self.itemArray.append(newItem)
+            //Сохраняем данные в Realm
+            if let currentCategory = self.selectedCategory {
+                do{
+                    try self.realm.write {
+                        let newItem = Item()
+                        newItem.title = textField.text!
+                        currentCategory.items.append(newItem)
+                    }
+                }
+                catch{
+                    print("Ошибка в сохранении Items в Realm - \(error.localizedDescription)")
+                }
+            }
             
-            self.saveItems()
+            self.tableView.reloadData()
         }
         
         alert.addTextField { (alertTextField) in
@@ -83,15 +89,20 @@ class ToDoListViewController: UITableViewController, UISearchBarDelegate {
     }
     
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return itemArray.count
+        return itemArray?.count ?? 1
     }
     
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         
         let cell = tableView.dequeueReusableCell(withIdentifier: "ToDoItemCell", for: indexPath) as UITableViewCell
         
-        cell.textLabel?.text = itemArray[indexPath.row].title
-        cell.accessoryType = itemArray[indexPath.row].done ? .checkmark : .none
+        if let item = itemArray?[indexPath.row] {
+            cell.textLabel?.text = item.title
+            cell.accessoryType = item.done ? .checkmark : .none
+        }
+        else{
+            cell.textLabel?.text = "Нету задач"
+        }
         
         return cell
     }
@@ -100,17 +111,18 @@ class ToDoListViewController: UITableViewController, UISearchBarDelegate {
     
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         
-        //Этот способ работает корректно только при маленьком количестве строк в таблице, если их будет больше чем может поместиться на экран, то выбрав первую ячейку, прокручивая ниже мы увидим что у ячейки которую мы не выбирали тоже появится .checkmark, все из за того что ячейки переиспользуются, а .checkmark у каждой ячейки не зависим, и если он был выбран то при переиспользовании этой ячейки он останется выбранным
-        //tableView.cellForRow(at: indexPath)?.accessoryType = tableView.cellForRow(at: indexPath)?.accessoryType == .checkmark ? .none : .checkmark
-        
-        //Чтобы этого избежать мы создали модель данных Item, в которой мы храним свойство говорящее была ли выбрана эта ячейка или нет. И присваиваем значение .accessoryType в методе выше, который вызывается при инициализации ячеек
-        itemArray[indexPath.row].done = !itemArray[indexPath.row].done
-        
-        //Удаление из CoreData
-        //context.delete(itemArray[indexPath.row])
-        //itemArray.remove(at: indexPath.row)
-        
-        saveItems()
+        //Если элемент массива не равен nil, то обновляем данные
+        if let item = itemArray?[indexPath.row]{
+            do{
+                try realm.write {
+                    item.done = !item.done
+//                    realm.delete(item) //Удаление объекта из БД
+                }
+            }
+            catch{
+                print("Не получилось обновить данные - \(error.localizedDescription)")
+            }
+        }
         
         tableView.reloadData()
         
@@ -119,44 +131,11 @@ class ToDoListViewController: UITableViewController, UISearchBarDelegate {
     
     // MARK: - Манипуляции с данными
     
-    ///Сохраняет данные в DataModel (CoreData)
-    private func saveItems(){
+    ///Загружает данные из Realm
+    private func loadItems() {
         
-        do{
-            try context.save()
-        }
-        catch{
-            print("Ошибка в сохранении данных - \(error.localizedDescription)")
-        }
-        
-        self.tableView.reloadData()
-    }
-    
-    ///Загружает данные из DataModel (CoreData)
-    /// - Parameters:
-    ///     - with: Запрос по которому будут возвращены данные. По умолчанию возвращает все записи
-    ///     - predicate: Предикат, по которому производится поиск
-    private func loadItems(with request: NSFetchRequest<Item> = Item.fetchRequest(), predicate: NSPredicate? = nil) {
-        
-        //Предикат поиска задач для выбранной категории
-        let categoryPredicate = NSPredicate(format: "parentCategory.name MATCHES %@", selectedCategory!.name!)
-        
-        //В данном случае у нас массив предикатов, так как мы должны искать только по тем элементам, который относяться к выбранной категории и не пересекаться с другими
-        if let additionalPredicate = predicate {
-            //Проверяем, если передали дополнительный предикат (поиск), то компонуем их, иначе будем получать просто все задачи для заданной категории
-            request.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [categoryPredicate, additionalPredicate])
-        }
-        else{
-            request.predicate = categoryPredicate
-        }
-        
-        do{
-            itemArray = try context.fetch(request)
-        }
-        catch{
-            print("Ошибка в загрузке данных - \(error.localizedDescription)")
-        }
-        
+        itemArray = selectedCategory?.items.sorted(byKeyPath: "title", ascending: true)
+
         self.tableView.reloadData()
     }
     
@@ -214,13 +193,12 @@ extension ToDoListViewController: UISearchResultsUpdating {
         
         //Если строка поиска не пустая загружаем совпадения
         if !searchBarIsEmpty(){
-            let request : NSFetchRequest<Item> = Item.fetchRequest()
-            
-            //Сортируем полученный результат по полю title по возрастанию
-            request.sortDescriptors = [NSSortDescriptor(key: "title", ascending: true)]
             
             //[cd] -> с - означает что мы не обращаем внимание на регистр. d - означает что мы игнорируем специальные символы и приравниваем их к обычным Подробнее в NSPredicateCheatsheet.pdf
-            loadItems(with: request, predicate: NSPredicate(format: "title CONTAINS[cd] %@", searchText))
+            //Сортируем полученный результат по полю title по возрастанию
+            itemArray = itemArray?.filter("title CONTAINS[cd] %@", searchText).sorted(byKeyPath: "title", ascending: true)
+            
+            tableView.reloadData()
         }
         //Иначе загружаем весь список
         else{

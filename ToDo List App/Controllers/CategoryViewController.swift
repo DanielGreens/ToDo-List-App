@@ -7,12 +7,14 @@
 //
 
 import UIKit
-import CoreData
+import RealmSwift
 
 class CategoryViewController: UITableViewController {
+    
+    ///Объект для записи и чтения данных из БД
+    let realm = try! Realm()
 
-    var categories = [Category]()
-    let context = (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
+    var categories: Results<Category>!  //Запросы возвращают из БД Realm данные типа Results<>. Они обновляются автоматически, в результате нам не нужно в ручную добавлять в нее элементы
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -30,12 +32,10 @@ class CategoryViewController: UITableViewController {
         let addAction = UIAlertAction(title: "Добавить", style: .default) { (action) in
             //Что должно произойти если пользователь нажмет добавить задачу
             
-            let newCategory = Category(context: self.context)
+            let newCategory = Category()
             newCategory.name = textField.text!
             
-            self.categories.append(newCategory)
-            
-            self.saveCategories()
+            self.save(category: newCategory)
         }
         
         alert.addTextField { (alertTextField) in
@@ -52,14 +52,14 @@ class CategoryViewController: UITableViewController {
     // MARK: - TableView DataSource Methods
     
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return categories.count
+        return categories?.count ?? 1
     }
     
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         
         let cell = tableView.dequeueReusableCell(withIdentifier: "CategoryCell", for: indexPath)
         
-        cell.textLabel?.text = categories[indexPath.row].name
+        cell.textLabel?.text = categories?[indexPath.row].name ?? "Нету ни одной категории"
         
         return cell
     }
@@ -74,16 +74,18 @@ class CategoryViewController: UITableViewController {
         let destinationVC = segue.destination as! ToDoListViewController
         
         if let indexPath = tableView.indexPathForSelectedRow{
-            destinationVC.selectedCategory = categories[indexPath.row]
+            destinationVC.selectedCategory = categories?[indexPath.row]
         }
     }
     
     // MARK: - Data Manipulation Methods
     
-    ///Сохраняет данные в DataModel (CoreData)
-    private func saveCategories(){
+    ///Сохраняет данные в БД (Realm)
+    private func save(category: Category){
         do{
-            try context.save()
+            try realm.write {
+                realm.add(category)
+            }
         }
         catch{
             print("Ошибка в сохранении категории - \(error.localizedDescription)")
@@ -91,17 +93,12 @@ class CategoryViewController: UITableViewController {
         self.tableView.reloadData()
     }
     
-    ///Загружает данные из DataModel (CoreData)
-    /// - Parameters:
-    ///     - with: Запрос по которому будут возвращены данные. По умолчанию возвращает все записи
-    private func loadCategories(with request: NSFetchRequest<Category> = Category.fetchRequest()) {
-        do{
-            categories = try context.fetch(request)
-        }
-        catch{
-            print("Ошибка в загрузке категорий - \(error.localizedDescription)")
-        }
+    ///Загружает данные из БД (Realm)
+    private func loadCategories() {
         
+        //Возвращает все обЪекты из БД заданного типа
+        categories = realm.objects(Category.self)
+
         self.tableView.reloadData()
     }
 }

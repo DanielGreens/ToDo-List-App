@@ -7,7 +7,7 @@
 //
 
 import UIKit
-import CoreData
+import RealmSwift
 
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate {
@@ -16,9 +16,9 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-        
-        //Получаем путь к папке на данном ПК, где хранятся наши данные для UserDefaults
-        //print(NSSearchPathForDirectoriesInDomains(.documentDirectory, .userDomainMask, true).last! as String)
+
+        //Получаем путь к папке на данном ПК, где хранится БД Realm
+//        print(Realm.Configuration.defaultConfiguration.fileURL!)
         
         return true
     }
@@ -45,35 +45,10 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
     ///Когда пользователь например свернул наше приложение и запустил какое нибудь ресурсоемкое приложение и операционная система вынуждена завершить наше приложение
     func applicationWillTerminate(_ application: UIApplication) {
-        // Called when the application is about to terminate. Save data if appropriate. See also applicationDidEnterBackground:.
-        self.saveContex()
-    }
-    
-    // MARK: - CoreData Stack
-    
-    public lazy var persistentContainer: NSPersistentContainer = {
         
-        let container = NSPersistentContainer(name: "DataModel")
-        container.loadPersistentStores(completionHandler: { (storeDescription, error) in
-            if let error = error as NSError? {
-                fatalError("Ошибка - \(error), \(error.userInfo)")
-            }
-        })
-        return container
-    }()
-    
-    private func saveContex() {
-        let context = persistentContainer.viewContext
-        if context.hasChanges {
-            do{
-                try context.save()
-            }
-            catch{
-                let nserror = error as NSError
-                fatalError("Ошибка сохранения - \(nserror.userInfo)")
-            }
-        }
     }
+    
+
 
 
 }

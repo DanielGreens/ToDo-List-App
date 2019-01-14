@@ -1,5 +1,5 @@
 //
-//  Item.swift
+//  ItemRealm.swift
 //  ToDo List App
 //
 //  Created by Даниил Омельчук on 13/01/2019.
@@ -7,21 +7,13 @@
 //
 
 import Foundation
-import CoreData
+import RealmSwift
 
-public class Item : NSManagedObject {
+///Список задания для конкретной категории
+class Item: Object {
+    @objc dynamic var title : String = ""
+    @objc dynamic var done: Bool = false
     
-    //Переопределяем инициализатор, который мы вынуждены вызвать в инициализаторе выше, иначе приложение упадет
-    private override init(entity: NSEntityDescription, insertInto context: NSManagedObjectContext?) {
-        super.init(entity: entity, insertInto: context)
-    }
-    
-    ///Инициализатор который устанавливает значение по умолчанию
-    //В нашем случае это делается чтобы свойству done было присвоено значение false при добавлении новой задачи
-    init(context: NSManagedObjectContext){
-        let entity = NSEntityDescription.entity(forEntityName: "Item", in: context);
-        super.init(entity: entity!, insertInto: context)
-        done = false
-        title = ""
-    }
+    //Category.self - указываем что это именно тип Category, а не экземпляр класса Category
+    var parentCategory = LinkingObjects(fromType: Category.self, property: "items") //Связь ссылка на родителя
 }
