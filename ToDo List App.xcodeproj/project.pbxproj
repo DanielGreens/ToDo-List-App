@@ -8,6 +8,10 @@
 
 /* Begin PBXBuildFile section */
 		741A88C7606F024D7E2A1A85 /* Pods_ToDo_List_App.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F826BA651677FD6C6A119CA6 /* Pods_ToDo_List_App.framework */; };
+		DC15100721ED2F7800180C43 /* SwipeTableViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC15100621ED2F7800180C43 /* SwipeTableViewController.swift */; };
+		DC15100A21EDF46000180C43 /* SwipeShared.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC15100921EDF46000180C43 /* SwipeShared.swift */; };
+		DC2A504621EFBD6F00540076 /* AuthorizationViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC2A504521EFBD6F00540076 /* AuthorizationViewController.swift */; };
+		DC2A504821EFC17200540076 /* LoginTextField.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC2A504721EFC17200540076 /* LoginTextField.swift */; };
 		DCA225A521E8BCBB00B4B09C /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = DCA225A421E8BCBB00B4B09C /* AppDelegate.swift */; };
 		DCA225A721E8BCBB00B4B09C /* ToDoListViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = DCA225A621E8BCBB00B4B09C /* ToDoListViewController.swift */; };
 		DCA225AA21E8BCBB00B4B09C /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = DCA225A821E8BCBB00B4B09C /* Main.storyboard */; };
@@ -21,6 +25,10 @@
 /* Begin PBXFileReference section */
 		28FE360125A5D11B89D963C0 /* Pods-ToDo List App.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-ToDo List App.release.xcconfig"; path = "Pods/Target Support Files/Pods-ToDo List App/Pods-ToDo List App.release.xcconfig"; sourceTree = "<group>"; };
 		9B156F96A55696A544DDEDCE /* Pods-ToDo List App.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-ToDo List App.debug.xcconfig"; path = "Pods/Target Support Files/Pods-ToDo List App/Pods-ToDo List App.debug.xcconfig"; sourceTree = "<group>"; };
+		DC15100621ED2F7800180C43 /* SwipeTableViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SwipeTableViewController.swift; sourceTree = "<group>"; };
+		DC15100921EDF46000180C43 /* SwipeShared.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SwipeShared.swift; sourceTree = "<group>"; };
+		DC2A504521EFBD6F00540076 /* AuthorizationViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthorizationViewController.swift; sourceTree = "<group>"; };
+		DC2A504721EFC17200540076 /* LoginTextField.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginTextField.swift; sourceTree = "<group>"; };
 		DCA225A121E8BCBB00B4B09C /* ToDo List App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "ToDo List App.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		DCA225A421E8BCBB00B4B09C /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		DCA225A621E8BCBB00B4B09C /* ToDoListViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToDoListViewController.swift; sourceTree = "<group>"; };
@@ -97,6 +105,8 @@
 		DCA225B821E8DE6200B4B09C /* Controllers */ = {
 			isa = PBXGroup;
 			children = (
+				DC2A504521EFBD6F00540076 /* AuthorizationViewController.swift */,
+				DC15100621ED2F7800180C43 /* SwipeTableViewController.swift */,
 				DCA225C121EB890500B4B09C /* CategoryViewController.swift */,
 				DCA225A621E8BCBB00B4B09C /* ToDoListViewController.swift */,
 			);
@@ -125,6 +135,8 @@
 			children = (
 				DCA225AB21E8BCBC00B4B09C /* Assets.xcassets */,
 				DCA225AD21E8BCBC00B4B09C /* LaunchScreen.storyboard */,
+				DC15100921EDF46000180C43 /* SwipeShared.swift */,
+				DC2A504721EFC17200540076 /* LoginTextField.swift */,
 			);
 			path = "Supporting files";
 			sourceTree = "<group>";
@@ -207,15 +219,19 @@
 			);
 			inputPaths = (
 				"${SRCROOT}/Pods/Target Support Files/Pods-ToDo List App/Pods-ToDo List App-frameworks.sh",
+				"${BUILT_PRODUCTS_DIR}/ChameleonFramework/ChameleonFramework.framework",
 				"${BUILT_PRODUCTS_DIR}/Realm/Realm.framework",
 				"${BUILT_PRODUCTS_DIR}/RealmSwift/RealmSwift.framework",
+				"${BUILT_PRODUCTS_DIR}/SwipeCellKit/SwipeCellKit.framework",
 			);
 			name = "[CP] Embed Pods Frameworks";
 			outputFileListPaths = (
 			);
 			outputPaths = (
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/ChameleonFramework.framework",
 				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/Realm.framework",
 				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/RealmSwift.framework",
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/SwipeCellKit.framework",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -251,10 +267,14 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				DC2A504821EFC17200540076 /* LoginTextField.swift in Sources */,
 				DCA225C221EB890500B4B09C /* CategoryViewController.swift in Sources */,
 				DCE140DA21EBC10C00AF551C /* Category.swift in Sources */,
 				DCE140D821EBC10200AF551C /* Item.swift in Sources */,
+				DC15100A21EDF46000180C43 /* SwipeShared.swift in Sources */,
+				DC2A504621EFBD6F00540076 /* AuthorizationViewController.swift in Sources */,
 				DCA225A721E8BCBB00B4B09C /* ToDoListViewController.swift in Sources */,
+				DC15100721ED2F7800180C43 /* SwipeTableViewController.swift in Sources */,
 				DCA225A521E8BCBB00B4B09C /* AppDelegate.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -405,6 +425,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = NGS2FL434N;
 				INFOPLIST_FILE = "ToDo List App/Info.plist";
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -424,6 +445,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = NGS2FL434N;
 				INFOPLIST_FILE = "ToDo List App/Info.plist";
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",

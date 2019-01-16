@@ -8,8 +8,9 @@
 
 import UIKit
 import RealmSwift
+import ChameleonFramework
 
-class CategoryViewController: UITableViewController {
+class CategoryViewController: SwipeTableViewController {
     
     ///Объект для записи и чтения данных из БД
     let realm = try! Realm()
@@ -34,6 +35,8 @@ class CategoryViewController: UITableViewController {
             
             let newCategory = Category()
             newCategory.name = textField.text!
+            //lighten(byPercentage: 0.3) - осветляем полуенный цвет на 30% чтобы темный текст был читаем
+            newCategory.colour = (UIColor.randomFlat.lighten(byPercentage: 0.3)?.hexValue())!
             
             self.save(category: newCategory)
         }
@@ -57,10 +60,14 @@ class CategoryViewController: UITableViewController {
     
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         
-        let cell = tableView.dequeueReusableCell(withIdentifier: "CategoryCell", for: indexPath)
-        
+        //Получаем ячейку из суперкласса. В нашем случае из класса SwipeTableViewController
+        let cell = super.tableView(tableView, cellForRowAt: indexPath)
+
         cell.textLabel?.text = categories?[indexPath.row].name ?? "Нету ни одной категории"
         
+        //Добавляем рандомный цвет ячейке с помозью фреймворка Chameleon
+        cell.backgroundColor = UIColor(hexString: categories?[indexPath.row].colour ?? "00A9D2")
+
         return cell
     }
     
@@ -97,8 +104,25 @@ class CategoryViewController: UITableViewController {
     private func loadCategories() {
         
         //Возвращает все обЪекты из БД заданного типа
-        categories = realm.objects(Category.self)
+        categories = realm.objects(Category.self).sorted(byKeyPath: "name", ascending: true)
 
         self.tableView.reloadData()
+    }
+    
+    // MARK: - Удаления данных по свайпу
+    
+    override func updateModel(at indexPath: IndexPath) {
+        
+        //Если элемент массива не равен nil, то обновляем данные
+        if let item = self.categories?[indexPath.row]{
+            do{
+                try self.realm.write {
+                    self.realm.delete(item) //Удаление объекта из БД
+                }
+            }
+            catch{
+                print("Не получилось удалить категорию - \(error.localizedDescription)")
+            }
+        }
     }
 }
